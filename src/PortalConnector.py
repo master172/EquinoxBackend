@@ -37,3 +37,16 @@ def create_user(user_id:str,email_id:str,password:str,club_name:str)->None:
 		"password":password,
 		"club_name":club_name
 	})
+
+def get_user_details(user_id:str)->dict:
+	if not get_user(user_id=user_id):
+		return False
+	doc_ref = db.collection("users").document(user_id)
+	doc = doc_ref.get()
+	data = doc.to_dict()
+	return data
+
+def get_all_host_ids()->list[str]:
+	doc_ref = db.collection("users")
+	docs = doc_ref.stream()
+	return [doc.id for doc in docs]

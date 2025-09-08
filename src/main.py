@@ -27,7 +27,13 @@ def create_user(login_creds:CreateUserRequest):
 
 @app.get("/club")
 def get_club_from_user(request:ClubRequest)->str:
-	print(request.user_id)
 	club = PortalConnector.get_club_from_user_id(request.user_id)
-	print(club)
 	return club if club else ""
+
+@app.get("/hosts")
+def get_club_from_user()->list[str]:
+	return PortalConnector.get_all_host_ids()
+
+@app.get("/host")
+def get_club_from_user(request:ClubRequest)->dict:
+	return PortalConnector.get_user_details(request.user_id)
