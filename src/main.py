@@ -27,7 +27,7 @@ def get_item_by_id(item_index:int)->str:
 	else:
 		raise HTTPException(status_code=404,detail="Item not found")
 
-@app.post("/json")
-def print_json(content:Item = Body(..., embed=False)):
+@app.post("/json",response_model=Item)
+def print_json(content:Item = Body(..., embed=False)) ->Item:
 	print(content)
 	return content
