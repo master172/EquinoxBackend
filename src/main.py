@@ -21,7 +21,7 @@ def get_user(login_creds:LoginRequest)->bool:
 	user_exists = PortalConnector.try_login(login_creds.login_id,login_creds.password)
 	return user_exists
 
-@app.post("/create")
+@app.post("/create")	
 def create_user(login_creds:CreateUserRequest):
 	PortalConnector.create_user(login_creds.login_id,login_creds.email_id,login_creds.password,login_creds.club_name)
 
