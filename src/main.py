@@ -6,6 +6,9 @@ app = FastAPI()
 
 class ClubRequest(BaseModel):
 	user_id:str
+
+class EventsRequest(BaseModel):
+	club_name:str
 class LoginRequest(BaseModel):
 	login_id:str
 	password:str
@@ -16,6 +19,10 @@ class CreateUserRequest(BaseModel):
 	club_name:str
 	email_id:str
 
+class EventRequest(BaseModel):
+	club_name:str
+	event_name:str
+
 @app.get("/user")
 def get_user(login_creds:LoginRequest)->bool:
 	user_exists = PortalConnector.try_login(login_creds.login_id,login_creds.password)
@@ -24,6 +31,19 @@ def get_user(login_creds:LoginRequest)->bool:
 @app.post("/create")	
 def create_user(login_creds:CreateUserRequest):
 	PortalConnector.create_user(login_creds.login_id,login_creds.email_id,login_creds.password,login_creds.club_name)
+
+@app.post("/create_event")	
+def create_user(event:PortalConnector.Event):
+	PortalConnector.create_event(event)
+
+@app.get("/event")
+def get_event(request:EventRequest)->dict:
+	event = PortalConnector.get_event(request.club_name,request.event_name)
+	return event
+
+@app.get("/events")
+def get_events(request:EventsRequest)->list[str]:
+	return PortalConnector.get_all_event_by_club(request.club_name)
 
 @app.get("/club")
 def get_club_from_user(request:ClubRequest)->str:

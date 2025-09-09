@@ -1,10 +1,22 @@
 import firebase_admin
 from firebase_admin import credentials , firestore
+from pydantic import BaseModel
 
 cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+
+class Event(BaseModel):
+	club_name :str
+	event_name :str
+	description :str
+	rules :list[str]
+	num_teams:int
+	num_participants:int
+	timings:str
+	contact_no:str
+	fees:int
 
 def get_user(user_id:str)->bool:
 	doc_ref = db.collection("users").document(user_id)
@@ -40,13 +52,44 @@ def create_user(user_id:str,email_id:str,password:str,club_name:str)->None:
 
 def get_user_details(user_id:str)->dict:
 	if not get_user(user_id=user_id):
-		return False
+		return {}
 	doc_ref = db.collection("users").document(user_id)
 	doc = doc_ref.get()
 	data = doc.to_dict()
 	return data
 
 def get_all_host_ids()->list[str]:
+	doc_ref = db.collection("users")
+	docs = doc_ref.stream()
+	return [doc.id for doc in docs]
+
+def event_exsists(club_name:str,event_name:str)->bool:
+	doc_ref = db.collection("events").document(event_name)
+	doc = doc_ref.get()
+	return doc.exists
+
+def create_event(event:Event)->None:
+	doc_ref = db.collection("events").document(event.club_name)
+	doc_ref.set({
+		"event_name":event.event_name,
+		"description":event.description,
+		"rules":event.rules,
+		"num_teams":event.num_teams,
+		"num_participants":event.num_participants,
+		"timings":event.timings,
+		"contact_no":event.contact_no,
+		"fees":event.fees,
+	})
+
+def get_event(club_name:str,event_name:str)->dict:
+	if not event_exsists(club_name=club_name,event_name=event_name):
+		return {}
+	doc_ref = db.collection("events").document(event_name)
+	doc = doc_ref.get()
+	data = doc.to_dict()
+	return data
+	
+def get_all_event_by_club(club_name:str)->list[str]:
 	doc_ref = db.collection("users")
 	docs = doc_ref.stream()
 	return [doc.id for doc in docs]
