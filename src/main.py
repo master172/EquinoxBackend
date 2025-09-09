@@ -55,6 +55,11 @@ def get_club_from_user(request:ClubRequest)->str:
 	club = PortalConnector.get_club_from_user_id(request.user_id)
 	return club if club else ""
 
+@app.get("/clubs")
+def get_clubs()->list[str]:
+	clubs = PortalConnector.get_all_clubs()
+	return clubs
+
 @app.get("/hosts")
 def get_club_from_user()->list[str]:
 	return PortalConnector.get_all_host_ids()
