@@ -64,12 +64,12 @@ def get_all_host_ids()->list[str]:
 	return [doc.id for doc in docs]
 
 def event_exsists(club_name:str,event_name:str)->bool:
-	doc_ref = db.collection("events").document(event_name)
+	doc_ref = db.collection("events").document(club_name).collection("events").document(event_name)
 	doc = doc_ref.get()
 	return doc.exists
 
 def create_event(event:Event)->None:
-	doc_ref = db.collection("events").document(event.club_name)
+	doc_ref = db.collection("events").document(event.club_name).collection("events").document(event.event_name)
 	doc_ref.set({
 		"event_name":event.event_name,
 		"description":event.description,
@@ -84,12 +84,12 @@ def create_event(event:Event)->None:
 def get_event(club_name:str,event_name:str)->dict:
 	if not event_exsists(club_name=club_name,event_name=event_name):
 		return {}
-	doc_ref = db.collection("events").document(event_name)
+	doc_ref = db.collection("events").document(club_name).collection("events").document(event_name)
 	doc = doc_ref.get()
 	data = doc.to_dict()
 	return data
 	
 def get_all_event_by_club(club_name:str)->list[str]:
-	doc_ref = db.collection("users")
+	doc_ref = db.collection("events").document(club_name).collection("events")
 	docs = doc_ref.stream()
 	return [doc.id for doc in docs]
