@@ -9,6 +9,7 @@ db = firestore.client()
 
 class Event(BaseModel):
 	club_name :str
+	event_id:str
 	event_name :str
 	description :str
 	rules :list[str]
@@ -69,7 +70,7 @@ def event_exsists(club_name:str,event_name:str)->bool:
 	return doc.exists
 
 def create_event(event:Event)->None:
-	doc_ref = db.collection("events").document(event.club_name).collection("events").document(event.event_name)
+	doc_ref = db.collection("events").document(event.club_name).collection("events").document(event.event_id)
 	doc_ref.set({
 		"event_name":event.event_name,
 		"description":event.description,
@@ -88,8 +89,14 @@ def get_event(club_name:str,event_name:str)->dict:
 	doc = doc_ref.get()
 	data = doc.to_dict()
 	return data
-	
-def get_all_event_by_club(club_name:str)->list[str]:
+
+def get_club_events_size(club_name:str)->int:
+	doc_ref = db.collection("events").document(club_name).collection("events")
+	count_query = doc_ref.count()
+	count_result = count_query.get()
+	return int(count_result[0][0].value)
+
+def get_all_event_by_club(club_name:str)->dict:
 	doc_ref = db.collection("events").document(club_name).collection("events")
 	docs = doc_ref.stream()
-	return [doc.id for doc in docs]
+	return {doc.id:doc.to_dict()["event_name"] for doc in docs}

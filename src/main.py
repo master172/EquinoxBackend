@@ -41,8 +41,13 @@ def get_event(request:EventRequest)->dict:
 	event = PortalConnector.get_event(request.club_name,request.event_name)
 	return event
 
+@app.get("/event_size")
+def get_event(request:EventsRequest)->int:
+	event = PortalConnector.get_club_events_size(request.club_name)
+	return event
+
 @app.get("/events")
-def get_events(request:EventsRequest)->list[str]:
+def get_events(request:EventsRequest)->dict:
 	return PortalConnector.get_all_event_by_club(request.club_name)
 
 @app.get("/club")
