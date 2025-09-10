@@ -67,3 +67,28 @@ def get_club_from_user()->list[str]:
 @app.get("/host")
 def get_club_from_user(request:ClubRequest)->dict:
 	return PortalConnector.get_user_details(request.user_id)
+
+@app.post("/registrations/individual/{club_name}/{event_name}")
+def api_create_individual_registration(club_name: str, event_name: str, registration: PortalConnector.IndividualDelegate):
+    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="individual")
+    reg_id = PortalConnector.create_individual_registration(req, registration)
+    return {"message": "Individual registration created", "registration_id": reg_id}
+
+
+@app.post("/registrations/institution/{club_name}/{event_name}")
+def api_create_institution_registration(club_name: str, event_name: str, registration: PortalConnector.InstitutionDelegate):
+    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="institution")
+    reg_id = PortalConnector.create_institution_registration(req, registration)
+    return {"message": "Institution registration created", "registration_id": reg_id}
+
+@app.get("/registrations/{reg_type}/{club_name}/{event_name}")
+def api_get_registrations(reg_type: str, club_name: str, event_name: str):
+    if reg_type not in ["individual", "institution"]:
+        raise HTTPException(status_code=400, detail="Invalid registration type")
+
+    registrations = PortalConnector.get_all_registrations(reg_type, club_name, event_name)
+
+    if not registrations:
+        raise HTTPException(status_code=404, detail="No registrations found")
+
+    return {"count": len(registrations), "registrations": registrations}
