@@ -14,6 +14,7 @@ class LoginRequest(BaseModel):
 	password:str
 
 class CreateUserRequest(BaseModel):
+	user_uid:str=""
 	login_id:str
 	password:str
 	club_name:str
@@ -30,7 +31,7 @@ def get_user(login_creds:LoginRequest)->bool:
 
 @app.post("/create")	
 def create_user(login_creds:CreateUserRequest):
-	PortalConnector.create_user(login_creds.login_id,login_creds.email_id,login_creds.password,login_creds.club_name)
+	PortalConnector.create_user(login_creds.login_id,login_creds.email_id,login_creds.password,login_creds.club_name,login_creds.user_uid)
 
 @app.post("/create_event")	
 def create_user(event:PortalConnector.Event):
@@ -61,7 +62,7 @@ def get_clubs()->list[str]:
 	return clubs
 
 @app.get("/hosts")
-def get_club_from_user()->list[str]:
+def get_club_from_user()->dict:
 	return PortalConnector.get_all_host_ids()
 
 @app.get("/host")

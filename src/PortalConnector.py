@@ -1,5 +1,6 @@
 import firebase_admin
 from firebase_admin import credentials , firestore
+from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 import uuid
 
@@ -17,6 +18,8 @@ class Event(BaseModel):
 	num_teams:int
 	num_participants:int
 	timings:str
+	venue:str
+	event_type:str
 	contact_no:str
 	fees:int
 
@@ -41,31 +44,49 @@ class IndividualDelegate(BaseModel):
 	team_name:str
 	participants:list[participant]
 
+def get_user_id_by_name(user_name:str)->str:
+	events_ref = db.collection("users")
+	query = events_ref.where(filter=FieldFilter("login_id", "==",user_name)).limit(1).stream()
+
+	for doc in query:
+		return doc.id
+	return ""
+
 def get_user(user_id:str)->bool:
-	doc_ref = db.collection("users").document(user_id)
+	user_uid = get_user_id_by_name(user_name=user_id)
+	if user_uid == "":
+		return False
+	doc_ref = db.collection("users").document(user_uid)
 	doc = doc_ref.get()
 	return doc.exists
 
 def try_login(user_id:str,password:str)->bool:
-	if not get_user(user_id=user_id):
+	user_uid = get_user_id_by_name(user_name=user_id)
+	if user_uid == "":
 		return False
-	doc_ref = db.collection("users").document(user_id)
-	doc = doc_ref.get()
-	data = doc.to_dict()
+	check_ref = db.collection("users").document(user_uid)
+	check = check_ref.get()
+	if check.exists == False:
+		return False
+	data = check.to_dict()
 	if user_id == data["login_id"] and password == data["password"]:
 		return True
 	return False
 
 def get_club_from_user_id(user_id:str)->str:
-	if not get_user(user_id=user_id):
+	user_uid = get_user_id_by_name(user_name=user_id)
+	if user_uid == "":
 		return ""
-	doc_ref = db.collection("users").document(user_id)
-	doc = doc_ref.get()
-	data = doc.to_dict()
+	check_ref = db.collection("users").document(user_uid)
+	check = check_ref.get()
+	if check.exists == False:
+		return False
+	data = check.to_dict()
 	return data["club_name"]
 
-def create_user(user_id:str,email_id:str,password:str,club_name:str)->None:
-	doc_ref = db.collection("users").document(user_id)
+def create_user(user_id:str,email_id:str,password:str,club_name:str,login_uid:str="")->None:
+	user_uid :str= str(uuid.uuid4()) if login_uid == "" else login_uid
+	doc_ref = db.collection("users").document(user_uid)
 	doc_ref.set({
 		"login_id":user_id,
 		"email_id":email_id,
@@ -73,18 +94,20 @@ def create_user(user_id:str,email_id:str,password:str,club_name:str)->None:
 		"club_name":club_name
 	})
 
+
+
 def get_user_details(user_id:str)->dict:
-	if not get_user(user_id=user_id):
+	check_ref = db.collection("users").document(user_id)
+	check = check_ref.get()
+	if check.exists == False:
 		return {}
-	doc_ref = db.collection("users").document(user_id)
-	doc = doc_ref.get()
-	data = doc.to_dict()
+	data = check.to_dict()
 	return data
 
-def get_all_host_ids()->list[str]:
+def get_all_host_ids()->dict:
 	doc_ref = db.collection("users")
 	docs = doc_ref.stream()
-	return [doc.id for doc in docs]
+	return {doc.id:doc.to_dict()["login_id"] for doc in docs}
 
 def event_exsists(club_name:str,event_name:str)->bool:
 	doc_ref = db.collection("club_events").document(club_name).collection("events").document(event_name)
@@ -93,7 +116,7 @@ def event_exsists(club_name:str,event_name:str)->bool:
 
 def get_event_id_by_name(club_id:str,event_name:str)->str:
 	events_ref = db.collection("club_events").document(club_id).collection("events")
-	query = events_ref.where("event_name", "==",event_name).stream()
+	query = events_ref.where(filter=FieldFilter("event_name", "==",event_name)).limit(1).stream()
 
 	for doc in query:
 		return doc.id
@@ -110,6 +133,8 @@ def create_event(event:Event)->None:
 		"num_teams":event.num_teams,
 		"num_participants":event.num_participants,
 		"timings":event.timings,
+		"venue":event.venue,
+		"event_type":event.event_type,
 		"contact_no":event.contact_no,
 		"fees":event.fees,
 	})
@@ -143,6 +168,8 @@ def get_all_clubs()->list[str]:
 def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->None:
 	registration_id = str(uuid.uuid4())
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	if event_id == "":
+		return
 	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("individual")
@@ -165,6 +192,8 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->None:
 	registration_id = str(uuid.uuid4())
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	if event_id == "":
+		return
 	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("institution")
@@ -200,6 +229,8 @@ def create_registration(request:RegistrationRequest,registration_list)->None:
 
 def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]:
 	event_id = get_event_id_by_name(club_name,event_name)
+	if event_id == "":
+		return
 	doc_ref = (
 		db.collection("registrations")
 		.document(reg_type)
