@@ -9,8 +9,8 @@ firebase_admin.initialize_app(cred)
 db = firestore.client()
 
 class Event(BaseModel):
+	event_id:str = ""
 	club_name :str
-	event_id:str
 	event_name :str
 	description :str
 	rules :list[str]
@@ -91,11 +91,18 @@ def event_exsists(club_name:str,event_name:str)->bool:
 	doc = doc_ref.get()
 	return doc.exists
 
+def get_event_id_by_name(club_id:str,event_name:str)->str:
+	events_ref = db.collection("club_events").document(club_id).collection("events")
+	query = events_ref.where("event_name", "==",event_name).stream()
+
+	for doc in query:
+		return doc.id
+	return ""
+
 def create_event(event:Event)->None:
-	doc_ref = db.collection("club_events").document(event.club_name).collection("events").document(event.event_id)
-	db.collection("club_events").document(event.club_name).set({
-		"club_name":event.club_name
-	})
+	
+	event_id:str = str(uuid.uuid4()) if event.event_id == "" else event.event_id
+	doc_ref = db.collection("club_events").document(event.club_name).collection("events").document(event_id)
 	doc_ref.set({
 		"event_name":event.event_name,
 		"description":event.description,
@@ -107,18 +114,20 @@ def create_event(event:Event)->None:
 		"fees":event.fees,
 	})
 
-def get_event(club_name:str,event_name:str)->dict:
-	if not event_exsists(club_name=club_name,event_name=event_name):
+def get_event(club_name:str,event_id:str)->dict:
+	if not event_exsists(club_name=club_name,event_name=event_id):
 		return {}
-	doc_ref = db.collection("club_events").document(club_name).collection("events").document(event_name)
+	doc_ref = db.collection("club_events").document(club_name).collection("events").document(event_id)
 	doc = doc_ref.get()
 	data = doc.to_dict()
+	data["event_id"] = doc.id
 	return data
 
 def get_club_events_size(club_name:str)->int:
 	doc_ref = db.collection("club_events").document(club_name).collection("events")
 	count_query = doc_ref.count()
 	count_result = count_query.get()
+	print("something is calling this event")
 	return int(count_result[0][0].value)
 
 def get_all_event_by_club(club_name:str)->dict:
@@ -133,17 +142,19 @@ def get_all_clubs()->list[str]:
 
 def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->None:
 	registration_id = str(uuid.uuid4())
-	doc_ref = (
+	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("individual")
 		.collection("clubs")
 		.document(request.club_name)
 		.collection("events")
-		.document(request.event_name)
-		.collection("registrations")
-		.document(registration_id)
+		.document(event_id)
 	)
-
+	data_ref.set({
+		"event_name":request.event_name
+	})
+	doc_ref = data_ref.collection("registrations").document(registration_id)
 	participants_data = [p.model_dump() for p in registration_list.participants]
 
 	doc_ref.set({
@@ -153,16 +164,19 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 
 def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->None:
 	registration_id = str(uuid.uuid4())
-	doc_ref = (
+	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("institution")
 		.collection("clubs")
 		.document(request.club_name)
 		.collection("events")
-		.document(request.event_name)
-		.collection("registrations")
-		.document(registration_id)
+		.document(event_id)
 	)
+	data_ref.set({
+		"event_name":request.event_name
+	})
+	doc_ref = data_ref.collection("registrations").document(registration_id)
 	teams_data = []
 	for team in registration_list.teams:
 		team_dict = {
@@ -185,13 +199,14 @@ def create_registration(request:RegistrationRequest,registration_list)->None:
 		create_institution_registration(request,registration_list)
 
 def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]:
+	event_id = get_event_id_by_name(club_name,event_name)
 	doc_ref = (
 		db.collection("registrations")
 		.document(reg_type)
 		.collection("clubs")
 		.document(club_name)
 		.collection("events")
-		.document(event_name)
+		.document(event_id)
 		.collection("registrations")
 		.stream()
 	)
@@ -200,5 +215,7 @@ def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]
 	for doc in doc_ref:
 		data = doc.to_dict()
 		data["registration_id"] = doc.id
+		data["event_name"] = event_name
 		registrations.append(data)
 		return(registrations)
+
