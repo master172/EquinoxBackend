@@ -26,6 +26,13 @@ class EventRequest(BaseModel):
 	club_name:str
 	event_name:str
 
+class UserUpdateRequest(BaseModel):
+	user_uid:str=""
+	login_id:str
+	password:str=""
+	club_name:str
+	email_id:str
+
 @app.get("/check_time")
 def check_time():
     now = datetime.now()
@@ -39,6 +46,11 @@ def get_user(login_creds:LoginRequest)->bool:
 @app.post("/create")	
 def create_user(login_creds:CreateUserRequest):
 	PortalConnector.create_user(login_creds.login_id,login_creds.email_id,login_creds.password,login_creds.club_name,login_creds.user_uid)
+
+@app.post("/update_host")	
+def create_user(login_creds:CreateUserRequest):
+	PortalConnector.update_user(login_creds.login_id,login_creds.email_id,login_creds.club_name,login_creds.user_uid,login_creds.password)
+
 
 @app.post("/create_event")	
 def create_user(event:PortalConnector.Event):

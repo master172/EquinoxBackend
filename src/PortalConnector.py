@@ -4,6 +4,7 @@ from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 import uuid
 from fastapi import HTTPException
+from passlib.hash import bcrypt
 
 cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
 firebase_admin.initialize_app(cred)
@@ -81,9 +82,7 @@ def try_login(user_id:str,password:str)->bool:
 	if check.exists == False:
 		return False
 	data = check.to_dict()
-	if user_id == data["login_id"] and password == data["password"]:
-		return True
-	return False
+	return bcrypt.verify(password, data["password"])
 
 def get_club_from_user_id(user_id:str)->str:
 	user_uid = get_user_id_by_name(user_name=user_id)
@@ -97,15 +96,31 @@ def get_club_from_user_id(user_id:str)->str:
 	return data["club_name"]
 
 def create_user(user_id:str,email_id:str,password:str,club_name:str,login_uid:str="")->None:
+	hashed_pw = bcrypt.hash(password)
 	user_uid :str= str(uuid.uuid4()) if login_uid == "" else login_uid
 	doc_ref = db.collection("users").document(user_uid)
 	doc_ref.set({
 		"login_id":user_id,
 		"email_id":email_id,
-		"password":password,
-		"club_name":club_name
+		"password":hashed_pw,
+		"club_name":club_name,
+		"role":"Bearer"
 	})
 
+def update_user(user_id:str,email_id:str,club_name:str,login_uid:str,password:str="")->None:
+	user_uid :str= str(uuid.uuid4()) if login_uid == "" else login_uid
+	doc_ref = db.collection("users").document(user_uid)
+	doc_ref.update({
+		"login_id":user_id,
+		"email_id":email_id,
+		"club_name":club_name,
+		"role":"Bearer"
+	})
+	if password != "":
+		hashed_pw = bcrypt.hash(password)
+		doc_ref.update({
+		"password":hashed_pw,
+	})
 
 
 def get_user_details(user_id:str)->dict:
@@ -114,6 +129,7 @@ def get_user_details(user_id:str)->dict:
 	if check.exists == False:
 		return {}
 	data = check.to_dict()
+	data["password"] = data["password"]
 	return data
 
 def get_all_host_ids()->dict:
