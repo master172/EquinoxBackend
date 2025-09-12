@@ -1,8 +1,10 @@
 from fastapi import FastAPI, Body, HTTPException
 from pydantic import BaseModel
 from . import PortalConnector
-
+from datetime import datetime
 app = FastAPI()
+
+FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 
 class ClubRequest(BaseModel):
 	user_id:str
@@ -23,6 +25,11 @@ class CreateUserRequest(BaseModel):
 class EventRequest(BaseModel):
 	club_name:str
 	event_name:str
+
+@app.get("/check_time")
+def check_time():
+    now = datetime.now()
+    return now > FIXED_DATETIME
 
 @app.get("/user")
 def get_user(login_creds:LoginRequest)->bool:
