@@ -177,11 +177,14 @@ def get_all_clubs()->list[str]:
 	docs = doc_ref.stream()
 	return [doc.id for doc in docs]
 
-def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->None:
+def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->str:
 	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
 	if event_id == "":
-		return
+		raise HTTPException(
+			status_code=404,
+			detail=f"Event not found {request.event_name}"
+		)
 	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("individual")
@@ -201,11 +204,16 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 		"participants":participants_data,
 	})
 
-def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->None:
+	return registration_id
+
+def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->str:
 	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
 	if event_id == "":
-		return
+		raise HTTPException(
+			status_code=404,
+			detail=f"Event not found {request.event_name}"
+		)
 	
 	all_reg_no = []
 	for team in registration_list.teams:
@@ -245,11 +253,14 @@ def create_institution_registration(request:RegistrationRequest,registration_lis
 		"teams":teams_data
 	})
 
-def create_registration(request:RegistrationRequest,registration_list)->None:
+	return registration_id
+
+def create_registration(request:RegistrationRequest,registration_list)->str:
 	if request.type == "individual":
-		create_individual_registration(request,registration_list)
+		reg_id = create_individual_registration(request,registration_list)
 	elif request.type == "institution":
-		create_institution_registration(request,registration_list)
+		reg_id = create_institution_registration(request,registration_list)
+	return reg_id
 
 def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]:
 	event_id = get_event_id_by_name(club_name,event_name)

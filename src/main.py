@@ -77,15 +77,15 @@ def get_club_from_user(request:ClubRequest)->dict:
 	return PortalConnector.get_user_details(request.user_id)
 
 @app.post("/registrations/individual/{club_name}/{event_name}")
-def api_create_individual_registration(club_name: str, event_name: str, registration: PortalConnector.IndividualDelegate):
-    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="individual")
+def api_create_individual_registration(club_name: str, event_name: str, registration: PortalConnector.IndividualDelegate,reg_id:str=""):
+    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="individual",registration_id=reg_id)
     reg_id = PortalConnector.create_individual_registration(req, registration)
     return {"message": "Individual registration created", "registration_id": reg_id}
 
 
 @app.post("/registrations/institution/{club_name}/{event_name}")
-def api_create_institution_registration(club_name: str, event_name: str, registration: PortalConnector.InstitutionDelegate):
-    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="institution")
+def api_create_institution_registration(club_name: str, event_name: str, registration: PortalConnector.InstitutionDelegate,reg_id:str=""):
+    req = PortalConnector.RegistrationRequest(club_name=club_name, event_name=event_name, type="institution",registration_id=reg_id)
     reg_id = PortalConnector.create_institution_registration(req, registration)
     return {"message": "Institution registration created", "registration_id": reg_id}
 
