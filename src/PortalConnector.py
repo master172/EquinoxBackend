@@ -3,6 +3,7 @@ from firebase_admin import credentials , firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 import uuid
+from fastapi import HTTPException
 
 cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
 firebase_admin.initialize_app(cred)
@@ -24,21 +25,32 @@ class Event(BaseModel):
 	fees:int
 
 class RegistrationRequest(BaseModel):
+	registration_id:str = ""
 	club_name:str
 	event_name:str
 	type:str
+
 class participant(BaseModel):
 	name:str
 	phone_no:str
 	email_id:str
+
+class participant_institution(BaseModel):
+	name:str
+	reg_no:str
+	phone_no:str
+	email_id:str
 class Team(BaseModel):
 	participants:list[participant]
+
+class Team_institution(BaseModel):
+	participants:list[participant_institution]
 class InstitutionDelegate(BaseModel):
 	institution_name:str
 	delegate_head:str
 	delegate_phone_no:str
 	delegate_email_id:str
-	teams:list[Team]
+	teams:list[Team_institution]
 
 class IndividualDelegate(BaseModel):
 	team_name:str
@@ -166,7 +178,7 @@ def get_all_clubs()->list[str]:
 	return [doc.id for doc in docs]
 
 def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->None:
-	registration_id = str(uuid.uuid4())
+	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
 	if event_id == "":
 		return
@@ -190,10 +202,22 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 	})
 
 def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->None:
-	registration_id = str(uuid.uuid4())
+	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
 	event_id = get_event_id_by_name(request.club_name,request.event_name)
 	if event_id == "":
 		return
+	
+	all_reg_no = []
+	for team in registration_list.teams:
+		for participant in team.participants:
+			if isinstance(participant, participant_institution):
+				if participant.reg_no in all_reg_no:
+					raise HTTPException(
+						status_code=400,
+						detail=f"Duplicate reg_no {participant.reg_no} found within the registration for {request.event_name}"
+					)
+				all_reg_no.append(participant.reg_no)
+
 	data_ref = doc_ref = (
 		db.collection("registrations")
 		.document("institution")
