@@ -40,7 +40,7 @@ class participant_institution(BaseModel):
 	name:str
 	reg_no:str
 	phone_no:str
-	email_id:str
+	email_id:str = ""
 class Team(BaseModel):
 	participants:list[participant]
 
@@ -327,7 +327,7 @@ def get_club_name_by_event(event_name:str)->str:
 		query = events_ref.where(filter=FieldFilter("event_name", "==", event_name)).limit(1)
 		events = query.stream()
 
-		for event in events:
+		for _ in events:
 			return club_name
 		
 	return None

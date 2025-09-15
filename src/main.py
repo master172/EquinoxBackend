@@ -55,6 +55,11 @@ class WebsiteIndividualData(BaseModel):
     selectedEvent: str
     participants: list
 
+class WebsiteInstitutionData(BaseModel):
+	type:str
+	schoolName:str
+	headDelegate:dict
+	registrationForms:list
 
 @app.get("/check_time")
 def check_time():
@@ -144,7 +149,7 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
 @app.post("/Web_IdR", response_model=dict)
 async def register(data: WebsiteIndividualData):
 	found_club_name = PortalConnector.get_club_name_by_event(data.selectedEvent)
-	reg_request = PortalConnector.RegistrationRequest(registration_id="",club_name=found_club_name,type="individual",event_name=data.selectedEvent)
+	reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(registration_id="",club_name=found_club_name,type="individual",event_name=data.selectedEvent)
 	name_team = str(uuid.uuid1())
 	registered_participants :list[PortalConnector.participant] = []
 	for i in data.participants:
@@ -157,4 +162,45 @@ async def register(data: WebsiteIndividualData):
 	registering_delegate = PortalConnector.IndividualDelegate(team_name=name_team,participants=registered_participants)
 	returned_uid = PortalConnector.create_individual_registration(reg_request,registering_delegate)
 	return {"uid":returned_uid}
-	
+
+@app.post("/Web_InR", response_model=dict)
+async def register(data: WebsiteInstitutionData):
+	institute_name = data.schoolName
+	head_name = data.headDelegate["name"]
+	head_phone = data.headDelegate["phone"]
+	head_email = data.headDelegate["reg_no"]
+	for registering_events in data.registrationForms:
+		club_name = PortalConnector.get_club_name_by_event(registering_events["eventName"])
+		event_name = registering_events["eventName"]
+		reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(
+			registration_id="",
+			club_name=club_name,
+			event_name=event_name,
+			type="institution")
+		
+		registering_teams:list[PortalConnector.Team_institution] = []
+		for team in registering_events["teams"]:
+			participant_list:list[PortalConnector.participant_institution] = []
+			for participant in team["participants"]:
+				name = participant["name"]
+				phone = participant["phone"]
+				reg_no = participant["reg_no"]
+				email = ""
+				new_particiapnt :PortalConnector.participant_institution = PortalConnector.participant_institution(
+					name=name,
+					reg_no=reg_no,
+					phone_no=phone,
+					email_id=email)
+				participant_list.append(new_particiapnt)
+			new_team :PortalConnector.Team_institution = PortalConnector.Team_institution(participants=participant_list)
+			registering_teams.append(new_team)
+		
+		new_institution_delegate :PortalConnector.InstitutionDelegate = PortalConnector.InstitutionDelegate(
+			institution_name=institute_name,
+			delegate_head=head_name,
+			delegate_phone_no=head_phone,
+			delegate_email_id=head_email,
+			teams=registering_teams)
+		
+		register_uid = PortalConnector.create_institution_registration(request=reg_request,registration_list=new_institution_delegate)
+	return {"uid":register_uid}
