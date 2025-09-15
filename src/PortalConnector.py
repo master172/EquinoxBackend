@@ -69,8 +69,6 @@ def get_all_events():
 			events_dict[club_name] = {}
 		
 		events_dict[club_name][event_id] = event.to_dict()
-	
-	print(events_dict)
 	return events_dict
 
 def get_user_id_by_name(user_name:str)->str:
@@ -317,5 +315,19 @@ def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]
 		registrations.append(data)
 		return(registrations)
 
+def get_club_name_by_event(event_name:str)->str:
+	club_events_ref = db.collection("club_events")
 
-get_all_events()
+	clubs = club_events_ref.list_documents()
+
+	for club_ref in clubs:
+		club_name = club_ref.id
+		
+		events_ref = club_ref.collection("events")
+		query = events_ref.where(filter=FieldFilter("event_name", "==", event_name)).limit(1)
+		events = query.stream()
+
+		for event in events:
+			return club_name
+		
+	return None

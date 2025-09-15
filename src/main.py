@@ -5,7 +5,7 @@ from . import PortalConnector
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
-import json
+import json, uuid
 
 FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 
@@ -49,6 +49,12 @@ class UserUpdateRequest(BaseModel):
 	password:str=""
 	club_name:str
 	email_id:str
+
+class WebsiteIndividualData(BaseModel):
+    type: str
+    selectedEvent: str
+    participants: list
+
 
 @app.get("/check_time")
 def check_time():
@@ -134,3 +140,21 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
         raise HTTPException(status_code=404, detail="No registrations found")
 
     return {"count": len(registrations), "registrations": registrations}
+
+@app.post("/Web_IdR", response_model=dict)
+async def register(data: WebsiteIndividualData):
+	found_club_name = PortalConnector.get_club_name_by_event(data.selectedEvent)
+	reg_request = PortalConnector.RegistrationRequest(registration_id="",club_name=found_club_name,type="individual",event_name=data.selectedEvent)
+	name_team = str(uuid.uuid1())
+	registered_participants :list[PortalConnector.participant] = []
+	for i in data.participants:
+		name = i["name"]
+		phone_no = i["phone"]
+		email_id = i["reg_no"]
+		new_participant = PortalConnector.participant(name=name,phone_no=phone_no,email_id=email_id)
+			
+		registered_participants.append(new_participant)
+	registering_delegate = PortalConnector.IndividualDelegate(team_name=name_team,participants=registered_participants)
+	returned_uid = PortalConnector.create_individual_registration(reg_request,registering_delegate)
+	return {"uid":returned_uid}
+	
