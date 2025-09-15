@@ -1,10 +1,27 @@
 from fastapi import FastAPI, Body, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel
 from . import PortalConnector
 from datetime import datetime
+from fastapi.middleware.cors import CORSMiddleware
 app = FastAPI()
+import json
 
 FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
+
+origins = [
+    "http://localhost:5173",  # your React dev server
+    "http://127.0.0.1:5173",
+    # add production domain later
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 class ClubRequest(BaseModel):
 	user_id:str
@@ -69,6 +86,11 @@ def get_event(request:EventsRequest)->int:
 @app.get("/events")
 def get_events(request:EventsRequest)->dict:
 	return PortalConnector.get_all_event_by_club(request.club_name)
+
+@app.get("/all_events")
+def get_all_events():
+	events = PortalConnector.get_all_events()
+	return Response(content=json.dumps(events),media_type="application/json")
 
 @app.get("/club")
 def get_club_from_user(request:ClubRequest)->str:

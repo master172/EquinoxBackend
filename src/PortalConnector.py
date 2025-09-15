@@ -57,6 +57,22 @@ class IndividualDelegate(BaseModel):
 	team_name:str
 	participants:list[participant]
 
+def get_all_events():
+	events_dict = {}
+	events_ref = db.collection_group("events").stream()
+	for event in events_ref:
+		path_parts = event.reference.path.split("/")
+		club_name = path_parts[1]
+		event_id = path_parts[3]
+
+		if club_name not in events_dict:
+			events_dict[club_name] = {}
+		
+		events_dict[club_name][event_id] = event.to_dict()
+	
+	print(events_dict)
+	return events_dict
+
 def get_user_id_by_name(user_name:str)->str:
 	events_ref = db.collection("users")
 	query = events_ref.where(filter=FieldFilter("login_id", "==",user_name)).limit(1).stream()
@@ -301,3 +317,5 @@ def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]
 		registrations.append(data)
 		return(registrations)
 
+
+get_all_events()
