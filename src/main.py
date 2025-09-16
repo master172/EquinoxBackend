@@ -138,6 +138,11 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
 
     return {"count": len(registrations), "registrations": registrations}
 
+"""
+raise HTTPException(status_code=400,detail={
+			"code": "REG_NO_EXISTS",
+			"message": "Registration number already exists"
+			})"""
 @app.post("/Web_IdR", response_model=dict)
 async def register(data: PortalConnector.WebsiteIndividualData):
 	PortalConnector.delete_registration(data.registration_uid)
@@ -150,7 +155,22 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 		event_name=data.selectedEvent)
 	name_team = str(uuid.uuid1())
 	registered_participants :list[PortalConnector.participant] = []
+	seen_emails = set()
+	seen_phones = set()
 	for i in data.participants:
+		if i["phone"] in seen_phones:
+			raise HTTPException(status_code=400,detail={
+				"code":"DUPLICATE_PARTICIPANT",
+				"message": f"Duplicate participant phone number: {i["phone"]}"
+			})
+		if i["email"] in seen_emails:
+			raise HTTPException(status_code=400,
+					   detail={
+						   "code":"DUPLICATE_PARTICIPANT",
+						   "message": f"Duplicate participant email: {i["email"]}"
+					   })
+		seen_emails.add(i["email"])
+		seen_phones.add(i["phone"])
 		name = i["name"]
 		phone_no = i["phone"]
 		email_id = i["email"]
@@ -169,6 +189,20 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 	head_name = data.headDelegate["name"]
 	head_phone = data.headDelegate["phone"]
 	head_email = data.headDelegate["email"]
+	seen_reg_no = set()
+	for i in data.registrationForms:
+		for j in i["teams"]:
+			for participant in j["participants"]:
+				if participant["reg_no"] in seen_reg_no:
+					raise HTTPException(
+						status_code=400,
+						detail={
+							"code":"DUPLICATE_PARTICIPANT",
+							"message": f"Duplicate registration number found: {participant["reg_no"]}"
+						}
+					)
+				seen_reg_no.add(participant["reg_no"])
+
 	for registering_events in data.registrationForms:
 		club_name = PortalConnector.get_club_name_by_event(registering_events["eventName"])
 		event_name = registering_events["eventName"]
@@ -182,16 +216,17 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 		for team in registering_events["teams"]:
 			participant_list:list[PortalConnector.participant_institution] = []
 			for participant in team["participants"]:
+				
 				name = participant["name"]
 				phone = participant["phone"]
 				reg_no = participant["reg_no"]
 				email = ""
-				new_particiapnt :PortalConnector.participant_institution = PortalConnector.participant_institution(
+				new_participant :PortalConnector.participant_institution = PortalConnector.participant_institution(
 					name=name,
 					reg_no=reg_no,
 					phone_no=phone,
 					email_id=email)
-				participant_list.append(new_particiapnt)
+				participant_list.append(new_participant)
 			new_team :PortalConnector.Team_institution = PortalConnector.Team_institution(participants=participant_list)
 			registering_teams.append(new_team)
 		
