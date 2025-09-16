@@ -57,6 +57,19 @@ class IndividualDelegate(BaseModel):
 	team_name:str
 	participants:list[participant]
 
+class WebsiteIndividualData(BaseModel):
+	registration_uid:str
+	type: str
+	selectedEvent: str
+	participants: list
+
+class WebsiteInstitutionData(BaseModel):
+	registration_uid:str
+	type:str
+	schoolName:str
+	headDelegate:dict
+	registrationForms:list
+
 def get_all_events():
 	events_dict = {}
 	events_ref = db.collection_group("events").stream()
@@ -331,3 +344,31 @@ def get_club_name_by_event(event_name:str)->str:
 			return club_name
 		
 	return None
+
+def create_individual_style_references(data:WebsiteIndividualData):
+	doc_ref = db.collection("individual_style_reference").document(data.registration_uid)
+	doc_ref.set({
+		"type":data.type,
+		"selectedEvent":data.selectedEvent,
+		"participants":data.participants
+	})
+
+def create_institution_style_references(data:WebsiteInstitutionData):
+	doc_ref = db.collection("institution_style_reference").document(data.registration_uid)
+	doc_ref.set({
+		"type":data.type,
+		"schoolName":data.schoolName,
+		"headDelegate":data.headDelegate,
+		"registrationForms":data.registrationForms
+	})
+
+def get_registration_exists(registration_uid:str)->dict:
+	doc_ref = db.collection("individual_style_reference").document(registration_uid)
+	doc = doc_ref.get()
+	if doc.exists:
+		return doc.to_dict()
+	doc_ref = db.collection("institution_style_reference").document(registration_uid)
+	doc = doc_ref.get()
+	if doc.exists:
+		return doc.to_dict()
+	return {}

@@ -50,16 +50,8 @@ class UserUpdateRequest(BaseModel):
 	club_name:str
 	email_id:str
 
-class WebsiteIndividualData(BaseModel):
-    type: str
-    selectedEvent: str
-    participants: list
-
-class WebsiteInstitutionData(BaseModel):
-	type:str
-	schoolName:str
-	headDelegate:dict
-	registrationForms:list
+class RegistrationCheckRequest(BaseModel):
+	uid:str
 
 @app.get("/check_time")
 def check_time():
@@ -147,15 +139,20 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
     return {"count": len(registrations), "registrations": registrations}
 
 @app.post("/Web_IdR", response_model=dict)
-async def register(data: WebsiteIndividualData):
+async def register(data: PortalConnector.WebsiteIndividualData):
+	PortalConnector.create_individual_style_references(data=data)
 	found_club_name = PortalConnector.get_club_name_by_event(data.selectedEvent)
-	reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(registration_id="",club_name=found_club_name,type="individual",event_name=data.selectedEvent)
+	reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(
+		registration_id=data.registration_uid,
+		club_name=found_club_name,
+		type="individual",
+		event_name=data.selectedEvent)
 	name_team = str(uuid.uuid1())
 	registered_participants :list[PortalConnector.participant] = []
 	for i in data.participants:
 		name = i["name"]
 		phone_no = i["phone"]
-		email_id = i["reg_no"]
+		email_id = i["email"]
 		new_participant = PortalConnector.participant(name=name,phone_no=phone_no,email_id=email_id)
 			
 		registered_participants.append(new_participant)
@@ -164,16 +161,17 @@ async def register(data: WebsiteIndividualData):
 	return {"uid":returned_uid}
 
 @app.post("/Web_InR", response_model=dict)
-async def register(data: WebsiteInstitutionData):
+async def register(data: PortalConnector.WebsiteInstitutionData):
+	PortalConnector.create_institution_style_references(data=data)
 	institute_name = data.schoolName
 	head_name = data.headDelegate["name"]
 	head_phone = data.headDelegate["phone"]
-	head_email = data.headDelegate["reg_no"]
+	head_email = data.headDelegate["email"]
 	for registering_events in data.registrationForms:
 		club_name = PortalConnector.get_club_name_by_event(registering_events["eventName"])
 		event_name = registering_events["eventName"]
 		reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(
-			registration_id="",
+			registration_id=data.registration_uid,
 			club_name=club_name,
 			event_name=event_name,
 			type="institution")
@@ -204,3 +202,10 @@ async def register(data: WebsiteInstitutionData):
 		
 		register_uid = PortalConnector.create_institution_registration(request=reg_request,registration_list=new_institution_delegate)
 	return {"uid":register_uid}
+
+@app.get("/lookup/{uid}")
+def lookup_registration(uid:str)->dict:
+	print(uid)
+	lookup_results = PortalConnector.get_registration_exists(uid)
+	print(lookup_results)
+	return lookup_results
