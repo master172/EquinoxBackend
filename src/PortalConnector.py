@@ -73,16 +73,22 @@ class WebsiteInstitutionData(BaseModel):
 def get_all_events():
 	events_dict = {}
 	events_ref = db.collection_group("events").stream()
-	for event in events_ref:
-		path_parts = event.reference.path.split("/")
-		club_name = path_parts[1]
-		event_id = path_parts[3]
 
-		if club_name not in events_dict:
-			events_dict[club_name] = {}
-		
-		events_dict[club_name][event_id] = event.to_dict()
+	for event in events_ref:
+		path_parts = event.reference.path.split("/")  
+		# path looks like: club_events/{club_name}/events/{event_id}
+
+		if path_parts[0] == "club_events":  # only keep from club_events root
+			club_name = path_parts[1]
+			event_id = path_parts[3]
+
+			if club_name not in events_dict:
+				events_dict[club_name] = {}
+
+			events_dict[club_name][event_id] = event.to_dict()
+
 	return events_dict
+
 
 def get_user_id_by_name(user_name:str)->str:
 	events_ref = db.collection("users")
@@ -219,6 +225,26 @@ def get_all_clubs()->list[str]:
 	doc_ref = db.collection("club_events")
 	docs = doc_ref.stream()
 	return [doc.id for doc in docs]
+
+"""this is the scary function, it deletes any registration with a given uid
+this is done to ensure that when the user updates a registration all previous
+reigstrations of that uid are delted"""
+def delete_registration(registration_id: str):
+	batch = db.batch()
+	docs = db.collection_group("registrations").stream()
+
+	found = False
+	for doc in docs:
+		if doc.id == registration_id:
+			batch.delete(doc.reference)
+			print(f"Queued delete: {doc.reference.path}")
+			found = True
+	
+	if found:
+		batch.commit()
+		print(f"Deleted all registrations with id {registration_id}")
+	else:
+		print("No such registration found.")
 
 def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->str:
 	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id

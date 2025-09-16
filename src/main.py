@@ -88,7 +88,7 @@ def get_event(request:EventsRequest)->int:
 
 @app.get("/events")
 def get_events(request:EventsRequest)->dict:
-	return PortalConnector.get_all_event_by_club(request.club_name)
+	return PortalConnector.get_all_event_by_club(request.club_name)	
 
 @app.get("/all_events")
 def get_all_events():
@@ -140,6 +140,7 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
 
 @app.post("/Web_IdR", response_model=dict)
 async def register(data: PortalConnector.WebsiteIndividualData):
+	PortalConnector.delete_registration(data.registration_uid)
 	PortalConnector.create_individual_style_references(data=data)
 	found_club_name = PortalConnector.get_club_name_by_event(data.selectedEvent)
 	reg_request :PortalConnector.RegistrationRequest = PortalConnector.RegistrationRequest(
@@ -162,6 +163,7 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 
 @app.post("/Web_InR", response_model=dict)
 async def register(data: PortalConnector.WebsiteInstitutionData):
+	PortalConnector.delete_registration(data.registration_uid)
 	PortalConnector.create_institution_style_references(data=data)
 	institute_name = data.schoolName
 	head_name = data.headDelegate["name"]
