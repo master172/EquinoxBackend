@@ -1,4 +1,5 @@
 /src/secrets/
+/exports/
 src/__pycache__/
 *.pyc
 *.pyo

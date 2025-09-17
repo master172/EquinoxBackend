@@ -242,3 +242,7 @@ def lookup_registration(uid:str)->dict:
 	lookup_results = PortalConnector.get_registration_exists(uid)
 	print(lookup_results)
 	return lookup_results
+
+@app.get("/export")
+def export_registrations():
+	PortalConnector.export_all_registrations()

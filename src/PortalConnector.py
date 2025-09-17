@@ -421,5 +421,3 @@ def get_registration_exists(registration_uid:str)->dict:
 
 def export_all_registrations():
 	exporter.export_all_events()
-
-export_all_registrations()
