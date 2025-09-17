@@ -5,11 +5,13 @@ from pydantic import BaseModel
 import uuid
 from fastapi import HTTPException
 from passlib.hash import bcrypt
+from ExcelExporter import FirestoreExcelExporter
 
 cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
+exporter = FirestoreExcelExporter(db)
 
 class Event(BaseModel):
 	event_id:str = ""
@@ -416,3 +418,8 @@ def get_registration_exists(registration_uid:str)->dict:
 	if doc.exists:
 		return doc.to_dict()
 	return {}
+
+def export_all_registrations():
+	exporter.export_all_events()
+
+export_all_registrations()
