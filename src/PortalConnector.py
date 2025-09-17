@@ -222,9 +222,18 @@ def get_all_event_by_club(club_name:str)->dict:
 	return {doc.id:doc.to_dict()["event_name"] for doc in docs}
 
 def get_all_clubs()->list[str]:
-	doc_ref = db.collection("club_events")
-	docs = doc_ref.stream()
-	return [doc.id for doc in docs]
+	club_list:list = []
+	events_ref = db.collection_group("events").stream()
+	for event in events_ref:
+		path_parts = event.reference.path.split("/")
+		if path_parts[0] != "club_events":
+			continue
+
+		
+		club_name = path_parts[1]
+		if club_name not in club_list:
+			club_list.append(club_name)
+	return club_list
 
 """this is the scary function, it deletes any registration with a given uid
 this is done to ensure that when the user updates a registration all previous
