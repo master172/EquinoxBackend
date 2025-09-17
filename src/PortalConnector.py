@@ -62,6 +62,7 @@ class WebsiteIndividualData(BaseModel):
 	type: str
 	selectedEvent: str
 	participants: list
+	clubUid:str
 
 class WebsiteInstitutionData(BaseModel):
 	registration_uid:str
@@ -257,7 +258,7 @@ def delete_registration(registration_id: str):
 
 def create_individual_registration(request:RegistrationRequest,registration_list:IndividualDelegate)->str:
 	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
-	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	event_id = request.event_name
 	if event_id == "":
 		raise HTTPException(
 			status_code=404,
@@ -271,8 +272,16 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 		.collection("events")
 		.document(event_id)
 	)
+
+	event_ref = db.collection("club_events").document(request.club_name).collection("events").document(request.event_name)
+	event = event_ref.get()
+	event_name = ""
+	if event.exists:
+		data = event.to_dict()
+		event_name = data["event_name"]
+
 	data_ref.set({
-		"event_name":request.event_name
+		"event_name":event_name
 	})
 	doc_ref = data_ref.collection("registrations").document(registration_id)
 	participants_data = [p.model_dump() for p in registration_list.participants]
@@ -286,7 +295,7 @@ def create_individual_registration(request:RegistrationRequest,registration_list
 
 def create_institution_registration(request:RegistrationRequest,registration_list:InstitutionDelegate)->str:
 	registration_id = str(uuid.uuid4()) if request.registration_id == "" else request.registration_id
-	event_id = get_event_id_by_name(request.club_name,request.event_name)
+	event_id = request.event_name
 	if event_id == "":
 		raise HTTPException(
 			status_code=404,
@@ -312,8 +321,15 @@ def create_institution_registration(request:RegistrationRequest,registration_lis
 		.collection("events")
 		.document(event_id)
 	)
+	event_ref = db.collection("club_events").document(request.club_name).collection("events").document(request.event_name)
+	event = event_ref.get()
+	event_name = ""
+	if event.exists:
+		data = event.to_dict()
+		event_name = data["event_name"]
+		
 	data_ref.set({
-		"event_name":request.event_name
+		"event_name":event_name
 	})
 	doc_ref = data_ref.collection("registrations").document(registration_id)
 	teams_data = []
@@ -332,13 +348,6 @@ def create_institution_registration(request:RegistrationRequest,registration_lis
 	})
 
 	return registration_id
-
-def create_registration(request:RegistrationRequest,registration_list)->str:
-	if request.type == "individual":
-		reg_id = create_individual_registration(request,registration_list)
-	elif request.type == "institution":
-		reg_id = create_institution_registration(request,registration_list)
-	return reg_id
 
 def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]:
 	event_id = get_event_id_by_name(club_name,event_name)
