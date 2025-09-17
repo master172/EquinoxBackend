@@ -1,1 +1,4 @@
 /src/secrets/
+src/__pycache__/
+*.pyc
+*.pyo
