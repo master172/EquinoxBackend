@@ -424,5 +424,3 @@ def export_all_registrations():
 
 def scrutinize_registrations():
 	exporter.scrutinize_all_events_to_excel()
-
-scrutinize_registrations()
