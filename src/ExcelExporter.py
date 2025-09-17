@@ -1,6 +1,8 @@
 import pandas as pd
 import os
-
+from openpyxl.styles import PatternFill
+from openpyxl.formatting.rule import CellIsRule
+from openpyxl import load_workbook
 class FirestoreExcelExporter:
 	def __init__(self, db, output_dir="exports"):
 		self.db = db
@@ -32,7 +34,6 @@ class FirestoreExcelExporter:
 					"institution_name": reg_data.get("institution_name", "")
 				}
 				for team in reg_data.get("teams", []):
-					team_name = team.get("team_name", "")
 					for p in team.get("participants", []):
 						rows.append({
 							**delegate,
@@ -88,3 +89,65 @@ class FirestoreExcelExporter:
 	def export_all_events(self):
 		self.export_events_to_excel("individual")
 		self.export_events_to_excel("institution")
+
+	def scrutinize_events_to_excel(self, registration_type):
+		"""
+		Scrutinize all events for a registration type,
+		export conflicts to one Excel file, one sheet per event,
+		only if conflicts exist.
+		"""
+		sheet_name_count = {}
+		events = self._get_all_events(registration_type)
+
+		# collect conflicts for all events
+		conflict_sheets = []
+
+		for event_name, club_id, event_ref in events:
+			df = self._get_event_dataframe(event_ref, registration_type)
+			if df is None or df.empty:
+				continue
+
+			conflicts = []
+
+			if registration_type == "individual":
+				dup_emails = df[df.duplicated("email_id", keep=False) & df["email_id"].ne("")]
+				dup_phones = df[df.duplicated("phone_no", keep=False) & df["phone_no"].ne("")]
+				if not dup_emails.empty:
+					dup_emails["issue"] = "Duplicate email_id"
+					conflicts.append(dup_emails)
+				if not dup_phones.empty:
+					dup_phones["issue"] = "Duplicate phone_no"
+					conflicts.append(dup_phones)
+
+			elif registration_type == "institution":
+				dup_regnos = df[df.duplicated("reg_no", keep=False) & df["reg_no"].ne("")]
+				if not dup_regnos.empty:
+					dup_regnos["issue"] = "Duplicate reg_no"
+					conflicts.append(dup_regnos)
+
+			if conflicts:
+				conflict_df = pd.concat(conflicts, ignore_index=True)
+				conflict_sheets.append((event_name, club_id, conflict_df))
+
+		if not conflict_sheets:
+			print(f"No conflicts found for {registration_type}, no file created.")
+			return  # exit early if nothing to write
+
+		# write Excel file only if conflicts exist
+		output_file = os.path.join(self.output_dir, f"{registration_type}_conflicts.xlsx")
+		with pd.ExcelWriter(output_file, engine="openpyxl") as writer:
+			for event_name, club_id, conflict_df in conflict_sheets:
+				base_name = f"{event_name} {club_id}".replace("/", "_")[:31]
+				count = sheet_name_count.get(base_name, 0)
+				sheet_name_count[base_name] = count + 1
+				sheet_name = f"{base_name}_{count}" if count > 0 else base_name
+				sheet_name = sheet_name[:31]
+				conflict_df.to_excel(writer, sheet_name=sheet_name, index=False)
+				print(f"Added conflict sheet: {sheet_name}")
+
+		print(f" Conflicts exported for {registration_type} to {output_file}")
+
+	
+	def scrutinize_all_events_to_excel(self):
+		self.scrutinize_events_to_excel("individual")
+		self.scrutinize_events_to_excel("institution")

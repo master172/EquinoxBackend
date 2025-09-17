@@ -246,3 +246,7 @@ def lookup_registration(uid:str)->dict:
 @app.get("/export")
 def export_registrations():
 	PortalConnector.export_all_registrations()
+
+@app.get("/scrutinize")
+def export_registrations():
+	PortalConnector.scrutinize_registrations()

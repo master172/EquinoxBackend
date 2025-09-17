@@ -421,3 +421,8 @@ def get_registration_exists(registration_uid:str)->dict:
 
 def export_all_registrations():
 	exporter.export_all_events()
+
+def scrutinize_registrations():
+	exporter.scrutinize_all_events_to_excel()
+
+scrutinize_registrations()
