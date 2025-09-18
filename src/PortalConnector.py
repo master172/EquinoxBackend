@@ -441,3 +441,11 @@ def create_fees_databse_by_uid(uid:str,amount:int):
 		}
 	)
 	print(f"set registration fees of {uid} to {amount}")
+
+def get_fees_by_registration_uid(uid:str):
+	fees_ref = db.collection("fees").document(uid)
+	fees = fees_ref.get()
+	if fees.exists:
+		data = fees.get("fees")
+		print(f"fees under uid {uid} is {data}")
+		return data

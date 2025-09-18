@@ -279,3 +279,8 @@ def export_and_send():
 		filename="registrations.zip",
 		media_type='application/zip'
 	)
+
+@app.get("/fees/{uid}",response_model=dict)
+def get_fees_by_uid(uid:str):
+	fees = PortalConnector.get_fees_by_registration_uid(uid=uid)
+	return {"fees":fees}
