@@ -380,7 +380,7 @@ def get_all_registrations(reg_type:str,club_name:str,event_name:str)->list[dict]
 		data["registration_id"] = doc.id
 		data["event_name"] = event_name
 		registrations.append(data)
-		return(registrations)
+	return(registrations)
 
 def get_club_name_by_event(event_name:str)->str:
 	club_events_ref = db.collection("club_events")
