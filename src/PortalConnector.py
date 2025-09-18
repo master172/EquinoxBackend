@@ -186,6 +186,14 @@ def get_event_id_by_name(club_id:str,event_name:str)->str:
 		return doc.id
 	return ""
 
+def get_event_fees(club_name:str,event_id:str):
+	event_ref = db.collection("club_events").document(club_name).collection("events").document(event_id)
+	event = event_ref.get()
+	if event.exists:
+		fees :int = int(event.get("fees"))
+		print(f"fees of the event {event_id} under {club_name} is {fees}")
+		return fees
+
 def create_event(event:Event)->None:
 	
 	event_id:str = str(uuid.uuid4()) if event.event_id == "" else event.event_id
@@ -424,3 +432,12 @@ def export_all_registrations():
 
 def scrutinize_registrations():
 	exporter.scrutinize_all_events_to_excel()
+
+def create_fees_databse_by_uid(uid:str,amount:int):
+	fees_ref = db.collection("fees").document(uid)
+	fees_ref.set(
+		{
+			"fees":amount
+		}
+	)
+	print(f"set registration fees of {uid} to {amount}")

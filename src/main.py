@@ -141,6 +141,7 @@ def api_get_registrations(reg_type: str, club_name: str, event_name: str):
 
 @app.post("/Web_IdR", response_model=dict)
 async def register(data: PortalConnector.WebsiteIndividualData):
+	amount_to_be_paid:int = 0
 	PortalConnector.delete_registration(data.registration_uid)
 	PortalConnector.create_individual_style_references(data=data)
 	found_club_name = data.clubUid
@@ -153,6 +154,7 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 	registered_participants :list[PortalConnector.participant] = []
 	seen_emails = set()
 	seen_phones = set()
+	temp_fees:int = PortalConnector.get_event_fees(club_name=found_club_name,event_id=data.selectedEvent)
 	for i in data.participants:
 		if i["phone"] in seen_phones:
 			raise HTTPException(status_code=400,detail={
@@ -165,6 +167,9 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 						   "code":"DUPLICATE_PARTICIPANT",
 						   "message": f"Duplicate participant email: {i["email"]}"
 					   })
+		
+		amount_to_be_paid += temp_fees
+		print(f"adding fees {temp_fees}")
 		seen_emails.add(i["email"])
 		seen_phones.add(i["phone"])
 		name = i["name"]
@@ -175,11 +180,14 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 		registered_participants.append(new_participant)
 	registering_delegate = PortalConnector.IndividualDelegate(team_name=name_team,participants=registered_participants)
 	returned_uid = PortalConnector.create_individual_registration(reg_request,registering_delegate)
-	return {"uid":returned_uid}
+	print(amount_to_be_paid)
+	PortalConnector.create_fees_databse_by_uid(uid=returned_uid,amount=amount_to_be_paid)
+	return {"uid":returned_uid,"fees":amount_to_be_paid}
 
 @app.post("/Web_InR", response_model=dict)
 async def register(data: PortalConnector.WebsiteInstitutionData):
-	print(data)
+	amount_to_be_paid:int = 0
+
 	PortalConnector.delete_registration(data.registration_uid)
 	PortalConnector.create_institution_style_references(data=data)
 	institute_name = data.schoolName
@@ -210,10 +218,13 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 			type="institution")
 		
 		registering_teams:list[PortalConnector.Team_institution] = []
+		current_team_fees:int = 0
+		temp_fees = PortalConnector.get_event_fees(club_name=club_name,event_id=event_name)
 		for team in registering_events["teams"]:
 			participant_list:list[PortalConnector.participant_institution] = []
 			for participant in team["participants"]:
-				
+				current_team_fees += temp_fees
+				print(f"adding fees {temp_fees}")
 				name = participant["name"]
 				phone = participant["phone"]
 				reg_no = participant["reg_no"]
@@ -235,7 +246,10 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 			teams=registering_teams)
 		
 		register_uid = PortalConnector.create_institution_registration(request=reg_request,registration_list=new_institution_delegate)
-	return {"uid":register_uid}
+		amount_to_be_paid += current_team_fees
+	print(amount_to_be_paid)
+	PortalConnector.create_fees_databse_by_uid(uid=register_uid,amount=amount_to_be_paid)
+	return {"uid":register_uid,"fees":amount_to_be_paid}
 
 @app.get("/lookup/{uid}")
 def lookup_registration(uid:str)->dict:
