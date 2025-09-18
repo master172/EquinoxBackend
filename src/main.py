@@ -1,11 +1,12 @@
-from fastapi import FastAPI, Body, HTTPException
-from fastapi.responses import Response
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from . import PortalConnector
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
+import uuid, shutil, os
+
 app = FastAPI()
-import json, uuid
 
 FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 
@@ -250,3 +251,17 @@ def export_registrations():
 @app.get("/scrutinize")
 def export_registrations():
 	PortalConnector.scrutinize_registrations()
+
+@app.get("/download")
+def export_and_send():
+	PortalConnector.export_all_registrations()
+	PortalConnector.scrutinize_registrations()
+	shutil.make_archive("registrations", 'zip', "exports")
+	if not os.path.exists("registrations.zip"):
+		raise HTTPException(status_code=404, detail="Export zip not found")
+	
+	return FileResponse(
+		path="registrations.zip",
+		filename="registrations.zip",
+		media_type='application/zip'
+	)

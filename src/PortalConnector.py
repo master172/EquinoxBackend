@@ -5,13 +5,13 @@ from pydantic import BaseModel
 import uuid
 from fastapi import HTTPException
 from passlib.hash import bcrypt
-from ExcelExporter import FirestoreExcelExporter
+from . import ExcelExporter
 
 cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
-exporter = FirestoreExcelExporter(db)
+exporter = ExcelExporter.FirestoreExcelExporter(db)
 
 class Event(BaseModel):
 	event_id:str = ""

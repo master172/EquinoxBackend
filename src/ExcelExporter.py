@@ -1,8 +1,5 @@
 import pandas as pd
 import os
-from openpyxl.styles import PatternFill
-from openpyxl.formatting.rule import CellIsRule
-from openpyxl import load_workbook
 class FirestoreExcelExporter:
 	def __init__(self, db, output_dir="exports"):
 		self.db = db
