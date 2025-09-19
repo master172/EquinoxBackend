@@ -465,4 +465,5 @@ def get_winners_data(club_name:str,event_id:str):
 	winners = winners_ref.get()
 	if winners.exists:
 		return winners.to_dict()
-	return {}
+	else:
+		raise HTTPException(status_code=404)
