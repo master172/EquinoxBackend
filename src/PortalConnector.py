@@ -73,6 +73,11 @@ class WebsiteInstitutionData(BaseModel):
 	headDelegate:dict
 	registrationForms:list
 
+class WinnersData(BaseModel):
+	first_place:dict
+	second_place:dict
+	third_place:dict
+
 def get_all_events():
 	events_dict = {}
 	events_ref = db.collection_group("events").stream()
@@ -449,3 +454,15 @@ def get_fees_by_registration_uid(uid:str):
 		data = fees.get("fees")
 		print(f"fees under uid {uid} is {data}")
 		return data
+
+def create_winners_data(club_name:str,event_id:str,data:WinnersData)->bool:
+	winners_ref = db.collection("winners").document(club_name).collection("events").document(event_id)
+	winners_ref.set(data.model_dump())
+	return True
+
+def get_winners_data(club_name:str,event_id:str):
+	winners_ref = db.collection("winners").document(club_name).collection("events").document(event_id)
+	winners = winners_ref.get()
+	if winners.exists:
+		return winners.to_dict()
+	return {}

@@ -284,3 +284,19 @@ def export_and_send():
 def get_fees_by_uid(uid:str):
 	fees = PortalConnector.get_fees_by_registration_uid(uid=uid)
 	return {"fees":fees}
+
+@app.post("/set_winners/{club_name}/{event_id}",response_model=bool)
+def create_winners(club_name:str,event_id:str,data:PortalConnector.WinnersData):
+	response = PortalConnector.create_winners_data(
+		club_name=club_name,
+		event_id=event_id,
+		data=data
+	)
+	return response
+
+@app.get("/get_winners/{club_name}/{event_id}",response_model=dict)
+def get_winners(club_name:str,event_id:str):
+	return PortalConnector.get_winners_data(
+		club_name=club_name,
+		event_id=event_id
+	)
