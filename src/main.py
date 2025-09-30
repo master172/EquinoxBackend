@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-from . import PortalConnector
+from . import PortalConnector, QR
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import uuid, shutil, os
@@ -182,7 +182,8 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 	returned_uid = PortalConnector.create_individual_registration(reg_request,registering_delegate)
 	print(amount_to_be_paid)
 	PortalConnector.create_fees_databse_by_uid(uid=returned_uid,amount=amount_to_be_paid)
-	return {"uid":returned_uid,"fees":amount_to_be_paid}
+	returned_qr = QR.generate_qr_code(data=returned_uid)
+	return {"uid":returned_uid,"fees":amount_to_be_paid,"qr_code":returned_qr}
 
 @app.post("/Web_InR", response_model=dict)
 async def register(data: PortalConnector.WebsiteInstitutionData):
@@ -249,7 +250,8 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 		amount_to_be_paid += current_team_fees
 	print(amount_to_be_paid)
 	PortalConnector.create_fees_databse_by_uid(uid=register_uid,amount=amount_to_be_paid)
-	return {"uid":register_uid,"fees":amount_to_be_paid}
+	returned_qr = QR.generate_qr_code(data=register_uid)
+	return {"uid":register_uid,"fees":amount_to_be_paid,"qr_code":returned_qr}
 
 @app.get("/lookup/{uid}")
 def lookup_registration(uid:str)->dict:
