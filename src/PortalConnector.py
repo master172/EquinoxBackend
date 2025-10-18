@@ -6,8 +6,9 @@ import uuid
 from fastapi import HTTPException
 from passlib.hash import bcrypt
 from . import ExcelExporter
+import os
 
-cred = credentials.Certificate("src\secrets\equinox-2025-firebase-adminsdk-fbsvc-512587e6eb.json")
+cred = credentials.Certificate(os.environ["FIREBASE_CRED"])
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
