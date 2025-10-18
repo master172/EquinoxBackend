@@ -8,7 +8,7 @@ from passlib.hash import bcrypt
 from . import ExcelExporter
 import os
 
-cred = credentials.Certificate(os.environ["FIREBASE_CRED"])
+cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
 firebase_admin.initialize_app(cred)
 
 db = firestore.client()
