@@ -13,6 +13,7 @@ FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 origins = [
     "http://localhost:5173",  # your React dev server
     "http://127.0.0.1:5173",
+	"https://equinox-alpha-six.vercel.app/",
     # add production domain later
 ]
 
