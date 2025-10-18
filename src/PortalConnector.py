@@ -12,7 +12,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-service_account_json_string = os.environ.get("FIREBASE_CRED")
+service_account_json_string = os.environ.get("FIREBASE_CRED").replace("\\n", "\n")
 
 if service_account_json_string:
     # Load the JSON string into a Python dictionary
