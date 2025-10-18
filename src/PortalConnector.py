@@ -7,9 +7,24 @@ from fastapi import HTTPException
 from passlib.hash import bcrypt
 from . import ExcelExporter
 import os
+import json
+from dotenv import load_dotenv
 
-cred = credentials.Certificate(os.getenv("FIREBASE_CRED"))
-firebase_admin.initialize_app(cred)
+load_dotenv()
+
+service_account_json_string = os.getenv("FIREBASE_CRED")
+
+if service_account_json_string:
+    # Load the JSON string into a Python dictionary
+    service_account_info = json.loads(service_account_json_string) 
+
+    # Create credentials from the dictionary content
+    cred = credentials.Certificate(service_account_info) 
+
+    # Initialize the app
+    firebase_admin.initialize_app(cred)
+else:
+    print("Error: FIREBASE_CRED environment variable not set.")
 
 db = firestore.client()
 exporter = ExcelExporter.FirestoreExcelExporter(db)
