@@ -5,10 +5,14 @@ from . import PortalConnector
 from datetime import datetime
 from fastapi.middleware.cors import CORSMiddleware
 import uuid, shutil, os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+fixed_datetime_str = os.getenv("FIXED_DATETIME")
+FIXED_DATETIME = datetime.fromisoformat(fixed_datetime_str)
 
 app = FastAPI()
-
-FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 
 origins = [
     "http://localhost:5173",
