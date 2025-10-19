@@ -227,10 +227,10 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 		
 		registering_teams:list[PortalConnector.Team_institution] = []
 		current_team_fees:int = 0
-		temp_fees = PortalConnector.get_event_fees(club_name=club_name,event_id=event_name)
-		current_team_fees += temp_fees
-		print(f"adding fees {temp_fees}")
+		temp_fees = PortalConnector.get_event_fees(club_name=club_name,event_id=event_name)	
 		for team in registering_events["teams"]:
+			current_team_fees += temp_fees
+			print(f"adding fees {temp_fees}")
 			participant_list:list[PortalConnector.participant_institution] = []
 			for participant in team["participants"]:
 				
