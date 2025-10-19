@@ -12,7 +12,6 @@ FIXED_DATETIME = datetime(2025, 9, 10, 18, 0, 0)
 
 origins = [
     "http://localhost:5173",
-    "http://127.0.0.1:5173",
 	"https://equinox-alpha-six.vercel.app",
 ]
 
@@ -53,6 +52,10 @@ class UserUpdateRequest(BaseModel):
 
 class RegistrationCheckRequest(BaseModel):
 	uid:str
+
+@app.get("/")
+def read_root():
+    return {"message": "FastAPI backend is running!"}
 
 @app.get("/check_time")
 def check_time():
