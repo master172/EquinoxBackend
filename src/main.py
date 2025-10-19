@@ -175,8 +175,7 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 						   "message": f"Duplicate participant email: {i["email"]}"
 					   })
 		
-		amount_to_be_paid += temp_fees
-		print(f"adding fees {temp_fees}")
+		
 		seen_emails.add(i["email"])
 		seen_phones.add(i["phone"])
 		name = i["name"]
@@ -185,6 +184,8 @@ async def register(data: PortalConnector.WebsiteIndividualData):
 		new_participant = PortalConnector.participant(name=name,phone_no=phone_no,email_id=email_id)
 			
 		registered_participants.append(new_participant)
+	amount_to_be_paid += temp_fees
+	print(f"adding fees {temp_fees}")
 	registering_delegate = PortalConnector.IndividualDelegate(team_name=name_team,participants=registered_participants)
 	returned_uid = PortalConnector.create_individual_registration(reg_request,registering_delegate)
 	print(amount_to_be_paid)
@@ -227,11 +228,12 @@ async def register(data: PortalConnector.WebsiteInstitutionData):
 		registering_teams:list[PortalConnector.Team_institution] = []
 		current_team_fees:int = 0
 		temp_fees = PortalConnector.get_event_fees(club_name=club_name,event_id=event_name)
+		current_team_fees += temp_fees
+		print(f"adding fees {temp_fees}")
 		for team in registering_events["teams"]:
 			participant_list:list[PortalConnector.participant_institution] = []
 			for participant in team["participants"]:
-				current_team_fees += temp_fees
-				print(f"adding fees {temp_fees}")
+				
 				name = participant["name"]
 				phone = participant["phone"]
 				reg_no = participant["reg_no"]
