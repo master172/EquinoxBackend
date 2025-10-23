@@ -267,15 +267,15 @@ def lookup_registration(uid:str)->dict:
 	print(lookup_results)
 	return lookup_results
 
-@app.get("/export")
+@app.get("/18ebefdc-da09-41c5-ac83-165cd26b4e43/export")
 def export_registrations():
 	PortalConnector.export_all_registrations()
 
-@app.get("/scrutinize")
+@app.get("/18ebefdc-da09-41c5-ac83-165cd26b4e43/scrutinize")
 def export_registrations():
 	PortalConnector.scrutinize_registrations()
 
-@app.get("/download")
+@app.get("/18ebefdc-da09-41c5-ac83-165cd26b4e43/download")
 def export_and_send():
 	PortalConnector.export_all_registrations()
 	PortalConnector.scrutinize_registrations()
